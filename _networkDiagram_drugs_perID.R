@@ -33,6 +33,61 @@ returnUnixDateTime<-function(date) {
   return(returnVal)
 }
 
+findSimilarDrugs <- function(inputFrame) {
+  
+  # inputFrame <- interestSet
+  # inputFrame <- inputFrame[1:10000,]
+  
+  inputFrame$DrugName.original <- inputFrame$DrugName
+  inputFrame$DrugNameNew <- inputFrame$DrugName
+  
+  inputFrame$DrugNameNew[grep("Metformin", inputFrame$DrugName, ignore.case = TRUE)] <- "Metformin"
+  inputFrame$DrugNameNew[grep("Glucophage", inputFrame$DrugName, ignore.case = TRUE)] <- "Metformin"
+  
+  inputFrame$DrugNameNew[grep("Gliclazide", inputFrame$DrugName, ignore.case = TRUE)] <- "Gliclazide"
+  inputFrame$DrugNameNew[grep("Diamicron", inputFrame$DrugName, ignore.case = TRUE)] <- "Gliclazide"
+  
+  inputFrame$DrugNameNew[grep("Rosiglitazone", inputFrame$DrugName, ignore.case = TRUE)] <- "Rosiglitazone"
+  inputFrame$DrugNameNew[grep("Avandia", inputFrame$DrugName, ignore.case = TRUE)] <- "Rosiglitazone"
+  
+  inputFrame$DrugNameNew[grep("Victoza", inputFrame$DrugName, ignore.case = TRUE)] <- "Liraglutide"
+  
+  
+  inputFrame$DrugNameNew[grep("Pioglitazone", inputFrame$DrugName, ignore.case = TRUE)] <- "Pioglitazone"
+  
+  inputFrame$DrugNameNew[grep("Sitagliptin", inputFrame$DrugName, ignore.case = TRUE)] <- "Sitagliptin"
+  inputFrame$DrugNameNew[grep("Januvia", inputFrame$DrugName, ignore.case = TRUE)] <- "Sitagliptin"
+  
+  
+  inputFrame$DrugNameNew[grep("Humalog Mix25", inputFrame$DrugName, ignore.case = TRUE)] <- "Humalog Mix 25"
+  
+  inputFrame$DrugNameNew[grep("Lantus", inputFrame$DrugName, ignore.case = TRUE)] <- "Insulin Glargine"
+  inputFrame$DrugNameNew[grep("Levemir", inputFrame$DrugName, ignore.case = TRUE)] <- "Insulin Detemir"
+  
+  inputFrame$DrugNameNew[grep("Insulatard", inputFrame$DrugName, ignore.case = TRUE)] <- "Insulatard"
+  
+  inputFrame$DrugNameNew[grep("Actrapid", inputFrame$DrugName, ignore.case = TRUE)] <- "Actrapid"
+  
+  inputFrame$DrugNameNew[grep("Novorapid", inputFrame$DrugName, ignore.case = TRUE)] <- "Novorapid"
+  
+  inputFrame$DrugNameNew[grep("Novomix 30", inputFrame$DrugName, ignore.case = TRUE)] <- "Novomix 30"
+  
+  inputFrame$DrugNameNew[grep("Mixtard 30", inputFrame$DrugName, ignore.case = TRUE)] <- "Mixtard 30"
+  inputFrame$DrugNameNew[grep("Mixtard 20", inputFrame$DrugName, ignore.case = TRUE)] <- "Mixtard 20"
+  
+  inputFrame$DrugNameNew[grep("Humulin M3", inputFrame$DrugName, ignore.case = TRUE)] <- "Humulin M3"
+  
+  inputFrame$DrugNameNew[grep("strip", inputFrame$DrugName, ignore.case = TRUE)] <- "Test Strips"
+  
+  outputFrame <- inputFrame
+  
+  outputFrame$DrugName.original <- NULL
+  outputFrame$DrugName <- outputFrame$DrugNameNew
+  outputFrame$DrugNameNew <- NULL
+  
+  return(outputFrame)
+}
+
 # generate node and link files
 library(data.table)
 drugDataSet <- read.csv("~/R/GlCoSy/SDsource/test_drug_out_second100kIDs_allTime.txt",header=TRUE,row.names=NULL)
@@ -44,6 +99,7 @@ drugDataSet <- read.csv("~/R/GlCoSy/SDsource/test_drug_out_second100kIDs_allTime
 
 # restrict to diabetes drugs
 interestSet <- subset(drugDataSet, substr(drugDataSet$BNFCode,1,3) == "6.1" | substr(drugDataSet$BNFCode,1,4) == "0601")
+interestSet <- findSimilarDrugs(interestSet)
 
 # generate a top-100 etc list for merging back
 # meeds a bit of data cleaning - merging synonymous drugs etc
@@ -87,11 +143,11 @@ IDframe <- as.data.frame(table(drugsetDT$LinkId))
 IDframe$Var1 <- as.numeric(levels(IDframe$Var1))[IDframe$Var1]
 
 ##
-plotfilename <- paste("./plots/single_patient_n50_",j,".pdf",sep="")
+plotfilename <- paste("./plots/single_patient_n10_","multiPlot",".pdf",sep="")
 pdf(plotfilename, width=100, height=100)
 par(mfrow=c(10,10))
 
-for (j in seq(1000, 1100, 1)) {
+for (j in seq(1000, 2000-1, 1)) {
 # for (j in seq(1, nrow(IDframe), 1)) {
   
   if (j%%100 == 0) {print(j)}
