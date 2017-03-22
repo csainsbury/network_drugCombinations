@@ -123,6 +123,10 @@ drugsetDT_original <-drugsetDT # preserve an original full dataset incase needed
 drugsetDT <- drugsetDT[prescription_dateplustime1 > returnUnixDateTime('2006-01-01') &
                  prescription_dateplustime1 < returnUnixDateTime('2017-01-01')]
 
+# scale time to 0 to 1 range
+drugsetDT$prescription_dateplustime1.original <- drugsetDT$prescription_dateplustime1
+drugsetDT$prescription_dateplustime1 <- (drugsetDT$prescription_dateplustime1 - min(drugsetDT$prescription_dateplustime1)) / (max(drugsetDT$prescription_dateplustime1) - min(drugsetDT$prescription_dateplustime1))
+
     # master list of top n drugs to form framework for plot - later use
     masterLocTable <- as.data.frame(table(drugsetDT$DrugName)); colnames(masterLocTable) <- c("D", "f")
     masterLocTable$f <- 0
@@ -141,6 +145,41 @@ returnEdgeSet <- function(drugNames) {
 
 }
 
+returnEdgeSet_withDateInfo <- function(drugNames, prescription_dateplustime1) {
+  
+  # drugNames <- drugsetDT[LinkId == "2147644003"]$DrugName
+  # prescription_dateplustime1 <- drugsetDT[LinkId == "2147644003"]$prescription_dateplustime1
+  
+  interestTable <- data.table(drugNames, prescription_dateplustime1)
+  interestTable <- unique(interestTable)
+  drugNamesVector <- as.data.frame(table(drugNames), stringsAsFactors = F)$drugNames
+  
+  edgesOutput <- as.data.frame(combinations(length(drugNamesVector), 2, drugNamesVector))
+  colnames(edgesOutput) <- c("from", "to")
+  edgesOutput$medianCombinationPrescription <- 0
+  
+    for (jj in seq(1, nrow(edgesOutput), 1)) {
+      drug1 <- edgesOutput$from[jj]
+      drug2 <- edgesOutput$to[jj]
+      
+      allPrescriptions <- merge(interestTable[drugNames == drug1], interestTable[drugNames == drug2], by = "prescription_dateplustime1")
+      
+      edgesOutput$medianCombinationPrescription[jj] <-quantile(allPrescriptions$prescription_dateplustime1)[3]
+      
+    }
+  
+  # test approach
+  edgesOutput$numbers <- 0
+  
+  
+  
+  edgesOutput$weight <- 1
+  edgesOutput$type <- c("drugPrescription")
+  
+  return(edgesOutput)
+  
+}
+
 edgesOutputStart <- as.data.frame(matrix(nrow=0, ncol=4))
 colnames(edgesOutputStart) <- c("from", "to", "weight", "type")
 
@@ -151,6 +190,10 @@ IDframe$Var1 <- as.numeric(levels(IDframe$Var1))[IDframe$Var1]
 plotfilename <- paste("./plots/single_patient_n50_","multiPlot_91kpatientSet",".pdf",sep="")
 pdf(plotfilename, width=100, height=100)
 par(mfrow=c(10,10))
+
+# define colors for time plotting
+maxColorValue <- 1000
+palette <- colorRampPalette(c("red","blue"))(maxColorValue)
 
 for (j in seq(1000, 4000-1, 1)) {
 # for (j in seq(1, nrow(IDframe), 1)) {
@@ -163,20 +206,20 @@ for (j in seq(1000, 4000-1, 1)) {
       
       # time bin here - ie time slices with generation of edgesets and on to images for each bin
       
-      id_sub_edgeset <- returnEdgeSet(id_subset$DrugName)
+      id_sub_edgeset <- returnEdgeSet_withDateInfo(id_subset$DrugName, id_subset$prescription_dateplustime1)
       
     }
   }
 # }
 
-
+  # remove combinations not prescribed together
+  id_sub_edgeset$medianCombinationPrescription[is.na(id_sub_edgeset$medianCombinationPrescription)] <- 0
+  id_sub_edgeset <- subset(id_sub_edgeset, medianCombinationPrescription > 0)
 
 ## 
 links_output <- id_sub_edgeset
 
 ##
-
-
 
 locTable_id <- as.data.frame(table(id_subset$DrugName)); colnames(locTable_id) <- c("D", "f")
 
@@ -194,14 +237,25 @@ nodes_output$n.prescription <- locTable$f
 nodes_output$media.type <- "drug"
 nodes_output$type.label <- 1
 
+nodes_output$medianPrescriptionDate <- 0
+
+  # add median prescription data per drug
+  for (k in seq(1, nrow(nodes_output), 1)) {
+    
+    if(nodes_output$n.prescription[k] > 0) {
+      nodes_output$medianPrescriptionDate[k] <- quantile(id_subset[DrugName == nodes_output$id[k]]$prescription_dateplustime1)[3]
+    }
+    
+  }
+
 nodes <- nodes_output
 links <- links_output
 
-# aggregate links - shouldn't be needed due to the links being all combinations
-links <- aggregate(links[,3], links[,-3], sum)
-links <- links[order(links$from, links$to),]
-colnames(links)[4] <- "weight"
-rownames(links) <- NULL
+# # aggregate links - shouldn't be needed due to the links being all combinations
+# links <- aggregate(links[,3], links[,-3], sum)
+# links <- links[order(links$from, links$to),]
+# colnames(links)[4] <- "weight"
+# rownames(links) <- NULL
 
 
 
@@ -224,7 +278,9 @@ l <- layout_in_circle(net)
 
 plot(net, layout=l,
      edge.curved=-0.1,
-     edge.color=rgb(200, 100, 100, 60, names = NULL, maxColorValue = 255),
+      edge.color=rgb(200, 100, 100, 60, names = NULL, maxColorValue = 255),
+     # edge.color = palette[cut(E(net)$medianCombinationPrescription, maxColorValue)],
+    # edge.color=rgb(200, 100, 100, E(net)$medianCombinationPrescription * 255, names = NULL, maxColorValue = 255),
      edge.width = ((E(net)$weight)/max(E(net)$weight))*15,
      vertex.size=sqrt(V(net)$n.prescription)*2,
      vertex.label.cex=0.6
