@@ -157,6 +157,7 @@ returnEdgeSet_withDateInfo <- function(drugNames, prescription_dateplustime1) {
   edgesOutput <- as.data.frame(combinations(length(drugNamesVector), 2, drugNamesVector))
   colnames(edgesOutput) <- c("from", "to")
   edgesOutput$medianCombinationPrescription <- 0
+  edgesOutput$weight <- 1
   
     for (jj in seq(1, nrow(edgesOutput), 1)) {
       drug1 <- edgesOutput$from[jj]
@@ -166,6 +167,7 @@ returnEdgeSet_withDateInfo <- function(drugNames, prescription_dateplustime1) {
       
       edgesOutput$medianCombinationPrescription[jj] <-quantile(allPrescriptions$prescription_dateplustime1)[3]
       
+      edgesOutput$weight[jj] <- nrow(allPrescriptions)
     }
   
   # test approach
@@ -173,7 +175,7 @@ returnEdgeSet_withDateInfo <- function(drugNames, prescription_dateplustime1) {
   
   
   
-  edgesOutput$weight <- 1
+  # edgesOutput$weight <- 1
   edgesOutput$type <- c("drugPrescription")
   
   return(edgesOutput)
@@ -187,7 +189,7 @@ IDframe <- as.data.frame(table(drugsetDT$LinkId))
 IDframe$Var1 <- as.numeric(levels(IDframe$Var1))[IDframe$Var1]
 
 ##
-plotfilename <- paste("./plots/single_patient_n50_","multiPlot_91kpatientSet",".pdf",sep="")
+plotfilename <- paste("./plots/single_patient_n50_","multiPlot_91kpatientSet_SCALED",".pdf",sep="")
 pdf(plotfilename, width=100, height=100)
 par(mfrow=c(10,10))
 
@@ -195,7 +197,7 @@ par(mfrow=c(10,10))
 maxColorValue <- 1000
 palette <- colorRampPalette(c("red","blue"))(maxColorValue)
 
-for (j in seq(1000, 4000-1, 1)) {
+for (j in seq(1000, 2000-1, 1)) {
 # for (j in seq(1, nrow(IDframe), 1)) {
   
   if (j%%100 == 0) {print(j)}
@@ -278,12 +280,13 @@ l <- layout_in_circle(net)
 
 plot(net, layout=l,
      edge.curved=-0.1,
-      edge.color=rgb(200, 100, 100, 60, names = NULL, maxColorValue = 255),
+      #edge.color=rgb(200, 100, 100, 60, names = NULL, maxColorValue = 255),
      # edge.color = palette[cut(E(net)$medianCombinationPrescription, maxColorValue)],
-    # edge.color=rgb(200, 100, 100, E(net)$medianCombinationPrescription * 255, names = NULL, maxColorValue = 255),
+    edge.color=rgb(255, 0, 0, E(net)$medianCombinationPrescription * 255, names = NULL, maxColorValue = 255),
      edge.width = ((E(net)$weight)/max(E(net)$weight))*15,
-     vertex.size=sqrt(V(net)$n.prescription)*2,
-     vertex.label.cex=0.6
+     vertex.size=sqrt(V(net)$n.prescription)*3,
+     vertex.label.cex = 0.01,
+    vertex.color=rgb(255, 0, 0, V(net)$medianPrescriptionDate * 255, names = NULL, maxColorValue = 255)
 )
 
 
