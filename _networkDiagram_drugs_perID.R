@@ -89,8 +89,9 @@ findSimilarDrugs <- function(inputFrame) {
 }
 
 # generate node and link files
-library(data.table)
-drugDataSet <- read.csv("~/R/GlCoSy/SDsource/test_drug_out_second100kIDs_allTime.txt",header=TRUE,row.names=NULL)
+drugDataSet <- read.csv("~/R/GlCoSy/SDsource/Export_all_diabetes_drugs.txt",header=TRUE,row.names=NULL)
+
+# drugDataSet <- read.csv("~/R/GlCoSy/SDsource/test_drug_out_second100kIDs_allTime.txt",header=TRUE,row.names=NULL)
  drugDataSet$BNFCode <- as.character(drugDataSet$BNFCode)
  drugDataSet$DrugName <- as.character(drugDataSet$DrugName)
  drugDataSet$LinkId <- as.numeric(levels(drugDataSet$LinkId))[drugDataSet$LinkId]
@@ -136,6 +137,7 @@ returnEdgeSet <- function(drugNames) {
 
 }
 
+
 edgesOutputStart <- as.data.frame(matrix(nrow=0, ncol=4))
 colnames(edgesOutputStart) <- c("from", "to", "weight", "type")
 
@@ -143,11 +145,11 @@ IDframe <- as.data.frame(table(drugsetDT$LinkId))
 IDframe$Var1 <- as.numeric(levels(IDframe$Var1))[IDframe$Var1]
 
 ##
-plotfilename <- paste("./plots/single_patient_n10_","multiPlot",".pdf",sep="")
+plotfilename <- paste("./plots/single_patient_n50_","multiPlot_91kpatientSet",".pdf",sep="")
 pdf(plotfilename, width=100, height=100)
 par(mfrow=c(10,10))
 
-for (j in seq(1000, 2000-1, 1)) {
+for (j in seq(1000, 4000-1, 1)) {
 # for (j in seq(1, nrow(IDframe), 1)) {
   
   if (j%%100 == 0) {print(j)}
